@@ -558,6 +558,38 @@ h1 {
     transform: translateY(-2px);
 }
 
+.lucky-number-selection {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    align-items: center;
+}
+
+.lucky-number-btn {
+    padding: 12px 24px;
+    font-size: 1.1em;
+    font-weight: 600;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    min-width: 120px;
+}
+
+.lucky-number-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.lucky-number-btn.skip-btn {
+    background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
+    color: white;
+}
+
+.lucky-number-btn.skip-btn:hover {
+    background: linear-gradient(135deg, #5a6268 0%, #343a40 100%);
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
     body {
@@ -617,6 +649,16 @@ h1 {
         max-width: 300px;
         padding: 14px 30px;
         font-size: 1.1em;
+    }
+
+    .lucky-number-selection {
+        gap: 12px;
+    }
+
+    .lucky-number-btn {
+        padding: 14px 28px;
+        font-size: 1.2em;
+        min-width: 140px;
     }
 
     .modal-content {

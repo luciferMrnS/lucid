@@ -418,7 +418,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('.lucky-number-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
             const selectedNumber = parseInt(e.target.dataset.number);
-            luckyNumber = selectedNumber;
+            luckyNumber = selectedNumber === 0 ? null : selectedNumber; // 0 means no lucky number
             awaitingLuckyNumber = false;
             console.log(`DEBUG: Lucky number selected: ${luckyNumber}`);
 
