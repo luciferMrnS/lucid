@@ -464,11 +464,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 document.querySelector('#win-modal p').textContent = `Amazing! You predicted ${currentPrediction} and rolled ${actualResult}!`;
                 showWinModal();
             } else {
-                console.log(`DEBUG: Prediction wrong. Giving protection throw.`);
-                protectionThrows++;
-                gameMessage.textContent = `❌ Wrong prediction! You predicted ${currentPrediction} but rolled ${actualResult}. You get a protection throw!`;
+                console.log(`DEBUG: Prediction wrong. No protection throw given.`);
+                gameMessage.textContent = `❌ Wrong prediction! You predicted ${currentPrediction} but rolled ${actualResult}.`;
                 gamePhase = 'waiting_for_roll';
-                updateProtectionThrowsDisplay();
                 rollButton.disabled = false;
             }
 
