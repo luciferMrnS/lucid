@@ -225,12 +225,9 @@ document.addEventListener('DOMContentLoaded', () => {
         gameMessage.textContent = 'Rolling...';
         console.log(`DEBUG: Starting dice roll animation`);
 
-        // Generate unique random results for each die
+        // Generate random results for each die (doubles now possible)
         const result1 = Math.floor(Math.random() * 6) + 1;
-        let result2 = Math.floor(Math.random() * 6) + 1;
-        if (result2 === result1) {
-            result2 = result1 === 6 ? 1 : result1 + 1;
-        }
+        const result2 = Math.floor(Math.random() * 6) + 1;
 
         console.log('Die 1 rolled:', result1);
         console.log('Die 2 rolled:', result2);
@@ -478,17 +475,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // Reset the prediction roll button so it can be used again next lucky number
             btn.disabled = false;
             btn.textContent = '🎲 Roll the Prediction Die!';
-
-            // Reset die1 to initial state after prediction roll
-            die1.style.transition = 'none'; // Temporarily disable transition for reset
-            die1.style.transform = 'rotateX(0deg) rotateY(0deg) rotateZ(0deg) translateZ(0px)'; // Reset to initial position showing front face
-            die1.style.animation = ''; // Re-enable idle animation
-            die1.classList.remove('rolling-animation'); // Remove animation class
-            // Reset background color and border for all faces if they were changed
-            die1.querySelectorAll('.face').forEach(face => {
-                face.style.backgroundColor = '#f0f0f0';
-                face.style.border = '1px solid #ccc';
-            });
+            // Note: die1 keeps showing the rolled result (no reset)
         });
     });
 
