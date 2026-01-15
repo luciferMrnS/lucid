@@ -164,6 +164,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function animateDie(dieElement, result) {
         return new Promise(resolve => {
+            // Clear any long-press transforms first
+            if (isLongPressing) {
+                stopContinuousSpin();
+            }
+
             // Reset die transforms and remove animation class
             dieElement.style.transition = 'none';
             dieElement.style.transform = 'rotateX(0deg) rotateY(0deg) rotateZ(0deg) translateZ(0px)';
@@ -248,6 +253,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         let message = `You rolled a ${result1} and a ${result2}.`;
         rollButton.disabled = false;
+        rollButton.textContent = '🎲 Roll Dice';
 
         // Check for Lucky Number activation (highest priority)
         const luckySumRolled = (result1 + result2 === luckyNumber);
@@ -312,6 +318,7 @@ document.addEventListener('DOMContentLoaded', () => {
             updateProtectionThrowsDisplay();
             // Show the message in chip runner modal
             showChipRunnerModal(message);
+            rollButton.textContent = '🎲 Roll Dice';
         } else {
             gamesPlayed++;
             gameMessage.textContent = '💔 No doubles, no protection throws left. You are eliminated!';
@@ -330,37 +337,75 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('roll-prediction-section').style.display = 'block';
     }
 
-    // Event Listeners
-    rollButton.addEventListener('click', () => {
-        console.log(`DEBUG: Roll button clicked. Current gamePhase: ${gamePhase}, rollButton.disabled: ${rollButton.disabled}`);
+    // Long-press functionality for roll button
+    let longPressInterval = null;
+    let isLongPressing = false;
 
+    function startContinuousSpin() {
+        if (isLongPressing) return; // Prevent multiple intervals
+
+        isLongPressing = true;
+        if (!rollButton.disabled) {
+            rollButton.textContent = '🎲 Spinning...';
+        }
+
+        // Disable idle animations to allow manual transforms
+        [die1, die2].forEach(die => {
+            die.style.animation = 'none';
+        });
+
+        // Determine which dice to spin based on game phase
+        let diceToSpin = [die1, die2];
+        if (gamePhase === 'power_up_roll') {
+            diceToSpin = [powerUpDieToReroll];
+        } else if (gamePhase === 'prediction_phase') {
+            diceToSpin = [die1];
+        }
+
+        // Disable idle animations for all dice to prevent unwanted movement
+        [die1, die2].forEach(die => {
+            die.style.animation = 'none';
+        });
+
+        // Start continuous spinning animation
+        longPressInterval = setInterval(() => {
+            if (!isLongPressing) return;
+
+            // Apply continuous rotation to the relevant dice
+            diceToSpin.forEach(die => {
+                const randomRotX = Math.random() * 360;
+                const randomRotY = Math.random() * 360;
+                const randomRotZ = Math.random() * 360;
+                die.style.transform = `rotateX(${randomRotX}deg) rotateY(${randomRotY}deg) rotateZ(${randomRotZ}deg)`;
+            });
+        }, 100); // Update every 100ms for smooth animation
+    }
+
+    function stopContinuousSpin() {
+        if (!isLongPressing) return;
+
+        isLongPressing = false;
+        clearInterval(longPressInterval);
+        longPressInterval = null;
+
+        // Note: Don't re-enable animations here to prevent interference with subsequent animations
+
+        // Trigger the actual roll
         if (gamePhase === 'waiting_for_roll' && !awaitingLuckyNumber) {
-            console.log(`DEBUG: Starting normal roll`);
             rollDice();
         } else if (gamePhase === 'power_up_roll') {
-            console.log(`DEBUG: Starting power-up roll. powerUpDieToReroll: ${powerUpDieToReroll ? powerUpDieToReroll.id : 'null'}, powerUpOtherDieValue: ${powerUpOtherDieValue}`);
-
-            // Disable button and show rolling message
+            // Handle power-up roll the same way
             rollButton.disabled = true;
             rollButton.textContent = '🎯 Power-up Rolling...';
-            console.log(`DEBUG: Button disabled and text changed to "Power-up Rolling..."`);
 
-            // Generate power-up result
             const powerUpResult = Math.floor(Math.random() * 6) + 1;
             console.log(`DEBUG: Power-up result: ${powerUpResult}`);
 
-            // Animate the power-up die
             animateDie(powerUpDieToReroll, powerUpResult).then(() => {
-                // Reset button text
                 rollButton.textContent = '🎲 Roll Dice';
 
-                console.log(`DEBUG: Power-up die animation complete. Result: ${powerUpResult}`);
-
-                // Small delay to ensure visual update is visible before showing modal
                 setTimeout(() => {
-                    // Handle power-up result
                     if (powerUpResult === 6) {
-                        console.log(`DEBUG: Power-up successful - rolled 6!`);
                         gamesPlayed++;
                         wins++;
                         showChipRunnerModal(`🎉 Power-up successful! You rolled a 6 on the odd die. You now have doubles (${powerUpOtherDieValue} and 6)! You WIN!`);
@@ -369,23 +414,17 @@ document.addEventListener('DOMContentLoaded', () => {
                         updateStatsDisplay();
                         showWinModal();
                     } else if (powerUpResult % 2 === 0) {
-                        console.log(`DEBUG: Power-up rolled even number: ${powerUpResult}`);
-                        // Rolled an even number (but not 6) - add a protection throw
                         protectionThrows++;
                         showChipRunnerModal(`Power-up used. You rolled an even number (${powerUpResult}) and earned a protection throw! You have ${protectionThrows} protection throws. Click 'Roll Dice' again.`);
                         gamePhase = 'waiting_for_roll';
                         updateProtectionThrowsDisplay();
                     } else {
-                        console.log(`DEBUG: Power-up rolled odd number: ${powerUpResult}, protectionThrows: ${protectionThrows}`);
-                        // Rolled an odd number - check if player has protection throws
                         if (protectionThrows > 0) {
-                            console.log(`DEBUG: Using protection throw`);
                             protectionThrows--;
                             showChipRunnerModal(`Power-up used. You rolled an odd number (${powerUpResult}) but had a protection throw. You have ${protectionThrows} protection throws left. Click 'Roll Dice' again.`);
                             gamePhase = 'waiting_for_roll';
                             updateProtectionThrowsDisplay();
                         } else {
-                            console.log("DEBUG: Power-up - Rolled odd, no protection. Game over.");
                             gamesPlayed++;
                             showChipRunnerModal(`💔 Power-up used. You rolled an odd number (${powerUpResult}) with no protection throws left. You are eliminated!`);
                             gamePhase = 'game_over';
@@ -395,22 +434,63 @@ document.addEventListener('DOMContentLoaded', () => {
                         }
                     }
 
-                    // Reset power-up variables
                     powerUpDieToReroll = null;
                     powerUpOtherDieValue = 0;
-                    console.log(`DEBUG: Power-up complete. Final gamePhase: ${gamePhase}`);
 
-                    // Re-enable button only if game is not over
                     if (gamePhase !== 'game_over') {
                         rollButton.disabled = false;
-                        console.log(`DEBUG: Button re-enabled for next roll`);
-                    } else {
-                        console.log(`DEBUG: Game over - button remains disabled`);
                     }
-                }, 300); // Brief pause to ensure visual result is visible before modal
+                }, 300);
             });
+        }
+    }
+
+    // Reset button text if needed
+    if (!isLongPressing && !rollButton.disabled) {
+        if (gamePhase === 'power_up_roll') {
+            rollButton.textContent = '🎯 Power-up Rolling...';
         } else {
-            console.log(`DEBUG: Button clicked but gamePhase is ${gamePhase} - ignoring click`);
+            rollButton.textContent = '🎲 Roll Dice';
+        }
+    }
+
+    // Mouse events for desktop
+    rollButton.addEventListener('mousedown', (e) => {
+        e.preventDefault(); // Prevent text selection
+        console.log(`DEBUG: Mousedown - disabled: ${rollButton.disabled}, gamePhase: ${gamePhase}, awaitingLuckyNumber: ${awaitingLuckyNumber}`);
+        console.log('DEBUG: Starting long press');
+        startContinuousSpin();
+    });
+
+    rollButton.addEventListener('mouseup', () => {
+        stopContinuousSpin();
+    });
+
+    rollButton.addEventListener('mouseleave', () => {
+        // Stop spinning if mouse leaves button while pressed
+        stopContinuousSpin();
+    });
+
+    // Touch events for mobile
+    rollButton.addEventListener('touchstart', (e) => {
+        e.preventDefault(); // Prevent scrolling
+        startContinuousSpin();
+    });
+
+    rollButton.addEventListener('touchend', () => {
+        stopContinuousSpin();
+    });
+
+    // Keep original click handler for accessibility/fallback
+    rollButton.addEventListener('click', (e) => {
+        // Only handle click if it wasn't part of a long press
+        if (!isLongPressing && !rollButton.disabled) {
+            e.preventDefault();
+            if (gamePhase === 'waiting_for_roll' && !awaitingLuckyNumber) {
+                rollDice();
+            } else if (gamePhase === 'power_up_roll') {
+                stopContinuousSpin(); // This will trigger the power-up roll
+            }
         }
     });
 
